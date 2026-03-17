@@ -1,4 +1,4 @@
-const { all, run } = require("../database/connection");
+const { all, get, run } = require("../database/connection");
 
 function hasEmptyValue(value) {
   return typeof value !== "string" || value.trim() === "";
@@ -26,7 +26,7 @@ async function listBooks(req, res, next) {
     }
 
     let query = `
-      SELECT imagem, titulo, categoria, descricao, autor, faixa_etaria
+      SELECT id, imagem, titulo, categoria, descricao, autor, faixa_etaria
       FROM livros
     `;
 
@@ -54,6 +54,37 @@ async function listBooks(req, res, next) {
     return res.status(200).json({
       total: books.length,
       livros: books
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function getBookById(req, res, next) {
+  try {
+    const bookId = Number.parseInt(req.params.id, 10);
+
+    if (Number.isNaN(bookId) || bookId <= 0) {
+      return res.status(400).json({
+        mensagem: "O ID do livro deve ser um numero inteiro maior que zero."
+      });
+    }
+
+    const book = await get(
+      `SELECT id, imagem, titulo, categoria, descricao, autor, faixa_etaria
+       FROM livros
+       WHERE id = ?`,
+      [bookId]
+    );
+
+    if (!book) {
+      return res.status(404).json({
+        mensagem: "Livro nao encontrado."
+      });
+    }
+
+    return res.status(200).json({
+      livro: book
     });
   } catch (error) {
     return next(error);
@@ -109,5 +140,6 @@ async function createBook(req, res, next) {
 
 module.exports = {
   listBooks,
+  getBookById,
   createBook
 };

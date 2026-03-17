@@ -70,7 +70,7 @@ Realiza login e retorna um token JWT.
 
 ### `GET /livro`
 
-Rota publica para listar livros.
+Rota publica para listar livros. Cada item retornado inclui o `id` do livro.
 
 #### Query params opcionais
 
@@ -87,6 +87,16 @@ GET /livro?limit=5
 GET /livro?categoria=Fantasia
 GET /livro?autor=George Orwell
 GET /livro?titulo=Harry
+```
+
+### `GET /livro/:id`
+
+Rota publica para buscar um livro especifico pelo ID informado na URL.
+
+#### Exemplo
+
+```bash
+GET /livro/1
 ```
 
 ### `POST /livro`
@@ -134,6 +144,12 @@ Listar livros:
 
 ```bash
 curl http://localhost:3000/livro
+```
+
+Buscar um livro por ID:
+
+```bash
+curl http://localhost:3000/livro/1
 ```
 
 Cadastrar livro com token:

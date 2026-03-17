@@ -68,8 +68,8 @@
 
                 const container = document.getElementById('listaLivros');
 
-                // Ajuste aqui dependendo da estrutura da API
-                const livros = dados.data || dados;
+                // 🔥 CORREÇÃO AQUI
+                const livros = dados.livros;
 
                 livros.forEach(livro => {
                     const div = document.createElement('div');
