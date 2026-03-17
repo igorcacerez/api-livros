@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Lista de Livros</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .livro {
+            background: #fff;
+            border-radius: 10px;
+            padding: 15px;
+            width: 250px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .livro img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .titulo {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .categoria {
+            color: #555;
+            font-size: 14px;
+        }
+
+        .descricao {
+            font-size: 13px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>📚 Lista de Livros</h1>
+
+    <div class="container" id="listaLivros"></div>
+
+    <script>
+        async function carregarLivros() {
+            try {
+                const resposta = await fetch('https://apps-api-livros.ucxocw.easypanel.host/livro');
+
+                const dados = await resposta.json();
+
+                const container = document.getElementById('listaLivros');
+
+                // Ajuste aqui dependendo da estrutura da API
+                const livros = dados.data || dados;
+
+                livros.forEach(livro => {
+                    const div = document.createElement('div');
+                    div.classList.add('livro');
+
+                    div.innerHTML = `
+                        <img src="${livro.imagem}" alt="${livro.titulo}">
+                        <div class="titulo">${livro.titulo}</div>
+                        <div class="categoria">${livro.categoria}</div>
+                        <div><strong>Autor:</strong> ${livro.autor}</div>
+                        <div class="descricao">${livro.descricao}</div>
+                        <div><strong>Faixa Etária:</strong> ${livro.faixa_etaria}</div>
+                    `;
+
+                    container.appendChild(div);
+                });
+
+            } catch (erro) {
+                console.error('Erro ao carregar livros:', erro);
+            }
+        }
+
+        carregarLivros();
+    </script>
+
+</body>
+</html>
