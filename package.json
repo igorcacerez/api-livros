@@ -1,0 +1,23 @@
+{
+  "name": "api-test",
+  "version": "1.0.0",
+  "description": "API REST em Node.js com Express, SQLite e JWT.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "express",
+    "sqlite",
+    "jwt",
+    "api"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "sqlite3": "^5.1.7"
+  }
+}
