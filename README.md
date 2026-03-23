@@ -2,6 +2,8 @@
 
 Projeto de API REST desenvolvido em JavaScript puro com cadastro e login de usuarios, autenticacao via JWT e gerenciamento de livros com SQLite.
 
+Os cadastros e a alteracao de livros agora bloqueiam palavras de baixo calao nos campos textuais.
+
 ## Requisitos
 
 - Node.js 18+ instalado
@@ -122,6 +124,29 @@ Authorization: Bearer SEU_TOKEN
 }
 ```
 
+### `PUT /livro/:id`
+
+Rota privada para alterar um livro existente.
+
+#### Header obrigatorio
+
+```http
+Authorization: Bearer SEU_TOKEN
+```
+
+#### Body
+
+```json
+{
+  "imagem": "https://exemplo.com/livro-atualizado.jpg",
+  "titulo": "Livro Atualizado",
+  "categoria": "Aventura",
+  "descricao": "Nova descricao do livro.",
+  "autor": "Autor Atualizado",
+  "faixa_etaria": "12+"
+}
+```
+
 ## Exemplo com curl
 
 Cadastro:
@@ -159,6 +184,15 @@ curl -X POST http://localhost:3000/livro \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer SEU_TOKEN" \
   -d "{\"imagem\":\"https://exemplo.com/capa.jpg\",\"titulo\":\"Livro Teste\",\"categoria\":\"Drama\",\"descricao\":\"Descricao\",\"autor\":\"Autor\",\"faixa_etaria\":\"12+\"}"
+```
+
+Atualizar livro com token:
+
+```bash
+curl -X PUT http://localhost:3000/livro/1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer SEU_TOKEN" \
+  -d "{\"imagem\":\"https://exemplo.com/capa-atualizada.jpg\",\"titulo\":\"Livro Teste Atualizado\",\"categoria\":\"Drama\",\"descricao\":\"Nova descricao\",\"autor\":\"Autor\",\"faixa_etaria\":\"12+\"}"
 ```
 
 ## Estrutura do projeto

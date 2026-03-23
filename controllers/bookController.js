@@ -1,4 +1,5 @@
 const { all, get, run } = require("../database/connection");
+const { validateFieldsForProfanity } = require("../utils/contentModeration");
 
 function hasEmptyValue(value) {
   return typeof value !== "string" || value.trim() === "";
@@ -108,6 +109,19 @@ async function createBook(req, res, next) {
       });
     }
 
+    const profanityValidation = validateFieldsForProfanity({
+      titulo,
+      categoria,
+      descricao,
+      autor
+    });
+
+    if (profanityValidation) {
+      return res.status(400).json({
+        mensagem: `O campo ${profanityValidation.field} contem linguagem impropria e nao pode ser salvo.`
+      });
+    }
+
     const result = await run(
       `INSERT INTO livros (imagem, titulo, categoria, descricao, autor, faixa_etaria)
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -138,8 +152,86 @@ async function createBook(req, res, next) {
   }
 }
 
+async function updateBook(req, res, next) {
+  try {
+    const bookId = Number.parseInt(req.params.id, 10);
+    const { imagem, titulo, categoria, descricao, autor, faixa_etaria } = req.body;
+
+    if (Number.isNaN(bookId) || bookId <= 0) {
+      return res.status(400).json({
+        mensagem: "O ID do livro deve ser um numero inteiro maior que zero."
+      });
+    }
+
+    if (
+      hasEmptyValue(imagem) ||
+      hasEmptyValue(titulo) ||
+      hasEmptyValue(categoria) ||
+      hasEmptyValue(descricao) ||
+      hasEmptyValue(autor) ||
+      hasEmptyValue(faixa_etaria)
+    ) {
+      return res.status(400).json({
+        mensagem: "Os campos imagem, titulo, categoria, descricao, autor e faixa_etaria sao obrigatorios."
+      });
+    }
+
+    const existingBook = await get("SELECT id FROM livros WHERE id = ?", [bookId]);
+
+    if (!existingBook) {
+      return res.status(404).json({
+        mensagem: "Livro nao encontrado."
+      });
+    }
+
+    const profanityValidation = validateFieldsForProfanity({
+      titulo,
+      categoria,
+      descricao,
+      autor
+    });
+
+    if (profanityValidation) {
+      return res.status(400).json({
+        mensagem: `O campo ${profanityValidation.field} contem linguagem impropria e nao pode ser salvo.`
+      });
+    }
+
+    await run(
+      `UPDATE livros
+       SET imagem = ?, titulo = ?, categoria = ?, descricao = ?, autor = ?, faixa_etaria = ?
+       WHERE id = ?`,
+      [
+        imagem.trim(),
+        titulo.trim(),
+        categoria.trim(),
+        descricao.trim(),
+        autor.trim(),
+        faixa_etaria.trim(),
+        bookId
+      ]
+    );
+
+    return res.status(200).json({
+      mensagem: "Livro atualizado com sucesso.",
+      livro: {
+        id: bookId,
+        imagem: imagem.trim(),
+        titulo: titulo.trim(),
+        categoria: categoria.trim(),
+        descricao: descricao.trim(),
+        autor: autor.trim(),
+        faixa_etaria: faixa_etaria.trim()
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   listBooks,
   getBookById,
-  createBook
+  createBook,
+  updateBook
 };

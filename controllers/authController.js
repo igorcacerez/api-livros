@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const { get, run } = require("../database/connection");
 const jwtConfig = require("../config/jwt");
+const { validateFieldsForProfanity } = require("../utils/contentModeration");
 
 function hasEmptyValue(value) {
   return typeof value !== "string" || value.trim() === "";
@@ -13,6 +14,17 @@ async function register(req, res, next) {
     if (hasEmptyValue(nome) || hasEmptyValue(email) || hasEmptyValue(senha)) {
       return res.status(400).json({
         mensagem: "Os campos nome, email e senha sao obrigatorios."
+      });
+    }
+
+    const profanityValidation = validateFieldsForProfanity({
+      nome,
+      email
+    });
+
+    if (profanityValidation) {
+      return res.status(400).json({
+        mensagem: `O campo ${profanityValidation.field} contem linguagem impropria e nao pode ser salvo.`
       });
     }
 
