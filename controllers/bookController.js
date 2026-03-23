@@ -229,9 +229,38 @@ async function updateBook(req, res, next) {
   }
 }
 
+async function deleteBook(req, res, next) {
+  try {
+    const bookId = Number.parseInt(req.params.id, 10);
+
+    if (Number.isNaN(bookId) || bookId <= 0) {
+      return res.status(400).json({
+        mensagem: "O ID do livro deve ser um numero inteiro maior que zero."
+      });
+    }
+
+    const existingBook = await get("SELECT id FROM livros WHERE id = ?", [bookId]);
+
+    if (!existingBook) {
+      return res.status(404).json({
+        mensagem: "Livro nao encontrado."
+      });
+    }
+
+    await run("DELETE FROM livros WHERE id = ?", [bookId]);
+
+    return res.status(200).json({
+      mensagem: "Livro removido com sucesso."
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   listBooks,
   getBookById,
   createBook,
-  updateBook
+  updateBook,
+  deleteBook
 };

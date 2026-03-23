@@ -147,6 +147,16 @@ Authorization: Bearer SEU_TOKEN
 }
 ```
 
+### `DELETE /livro/:id`
+
+Rota privada para remover um livro pelo ID.
+
+#### Header obrigatorio
+
+```http
+Authorization: Bearer SEU_TOKEN
+```
+
 ## Exemplo com curl
 
 Cadastro:
@@ -193,6 +203,13 @@ curl -X PUT http://localhost:3000/livro/1 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer SEU_TOKEN" \
   -d "{\"imagem\":\"https://exemplo.com/capa-atualizada.jpg\",\"titulo\":\"Livro Teste Atualizado\",\"categoria\":\"Drama\",\"descricao\":\"Nova descricao\",\"autor\":\"Autor\",\"faixa_etaria\":\"12+\"}"
+```
+
+Deletar livro com token:
+
+```bash
+curl -X DELETE http://localhost:3000/livro/1 \
+  -H "Authorization: Bearer SEU_TOKEN"
 ```
 
 ## Estrutura do projeto
