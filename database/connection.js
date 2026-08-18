@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const sqlite3 = require("sqlite3").verbose();
 
-const dbPath = path.join(__dirname, "app.db");
+const dbPath = process.env.APP_DB_PATH || path.join(__dirname, "app.db");
 const dbDirectory = path.dirname(dbPath);
 
 if (!fs.existsSync(dbDirectory)) {

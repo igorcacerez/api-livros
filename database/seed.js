@@ -1,3 +1,4 @@
+const bcrypt = require("bcryptjs");
 const { get, run } = require("./connection");
 
 const initialUser = {
@@ -176,9 +177,10 @@ async function seedInitialData() {
   );
 
   if (!existingAdmin) {
+    const passwordHash = await bcrypt.hash(initialUser.senha, 10);
     await run(
       "INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)",
-      [initialUser.nome, initialUser.email, initialUser.senha]
+      [initialUser.nome, initialUser.email, passwordHash]
     );
   }
 

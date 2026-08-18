@@ -1,67 +1,82 @@
-# API REST com Node.js, Express, SQLite e JWT
+# API de Livros
 
-Projeto de API REST desenvolvido em JavaScript puro com cadastro e login de usuarios, autenticacao via JWT e gerenciamento de livros com SQLite.
-
-Os cadastros e a alteracao de livros agora bloqueiam palavras de baixo calao nos campos textuais.
+API REST didática construída com Node.js, Express, SQLite e JWT. O projeto oferece CRUD de usuários, login com Bearer token e CRUD autenticado de livros.
 
 ## Requisitos
 
-- Node.js 18+ instalado
-- npm instalado
+- Node.js 18 ou superior
+- npm
 
-## Instalacao
+## Instalação e execução
 
 ```bash
 npm install
-```
-
-## Execucao
-
-Modo padrao:
-
-```bash
 npm start
 ```
 
-Modo desenvolvimento:
+A API inicia em `http://localhost:3000`. A documentação interativa fica em:
 
-```bash
-npm run dev
+- Swagger UI: `http://localhost:3000/docs`
+- Documento OpenAPI em JSON: `http://localhost:3000/docs.json`
+
+Na primeira execução, o banco `database/app.db`, as tabelas e os dados iniciais são criados automaticamente.
+
+## Usuário inicial
+
+```text
+email: admin@gmail.com
+senha: senai123
 ```
 
-Ao iniciar:
+As senhas são armazenadas com hash bcrypt. Bancos antigos do projeto, que ainda tenham senhas em texto puro, são migrados automaticamente na inicialização.
 
-- O banco SQLite e criado automaticamente em `database/app.db`
-- As tabelas `usuarios` e `livros` sao criadas automaticamente
-- O usuario inicial e inserido, caso nao exista
-- Os 20 livros iniciais sao inseridos automaticamente, caso a tabela esteja vazia
+## Autenticação
 
-## Usuario inicial
+Faça login em `POST /auth/login`. Copie o campo `token` da resposta e envie-o nas rotas privadas:
 
-- Email: `admin@gmail.com`
-- Senha: `senai123`
+```http
+Authorization: Bearer SEU_TOKEN
+```
 
-## Rotas
+O token expira em 10 horas. Se o usuário for removido, o token deixa de ser aceito imediatamente.
 
-### `POST /cadastro`
+## Rotas públicas
 
-Cadastra um novo usuario.
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| `POST` | `/usuarios` | Cadastra um usuário |
+| `POST` | `/auth/login` | Realiza login |
+| `GET` | `/livros` | Lista e filtra livros |
+| `GET` | `/docs` | Abre o Swagger UI |
+| `GET` | `/docs.json` | Retorna o documento OpenAPI |
 
-#### Body
+Entre as rotas de livros, somente `GET /livros` é pública. Consultar um livro por ID, cadastrar, atualizar ou excluir exige autenticação.
+
+## CRUD de usuários
+
+| Método | Rota | Autenticação | Descrição |
+| --- | --- | --- | --- |
+| `POST` | `/usuarios` | Não | Cadastra um usuário |
+| `GET` | `/usuarios` | Bearer | Lista usuários |
+| `GET` | `/usuarios/:id` | Bearer | Busca um usuário |
+| `PUT` | `/usuarios/:id` | Bearer | Atualiza nome, email e senha |
+| `DELETE` | `/usuarios/:id` | Bearer | Exclui um usuário |
+
+Corpo de cadastro e atualização:
 
 ```json
 {
   "nome": "Maria Silva",
-  "email": "maria@gmail.com",
+  "email": "maria@email.com",
   "senha": "123456"
 }
 ```
 
-### `POST /login`
+A senha nunca aparece nas respostas da API.
 
-Realiza login e retorna um token JWT.
+## Login
 
-#### Body
+### `POST /auth/login`
 
 ```json
 {
@@ -70,168 +85,103 @@ Realiza login e retorna um token JWT.
 }
 ```
 
-### `GET /livro`
+Exemplo de resposta:
 
-Rota publica para listar livros. Cada item retornado inclui o `id` do livro.
+```json
+{
+  "mensagem": "Login realizado com sucesso.",
+  "token": "TOKEN_JWT",
+  "usuario": {
+    "id": 1,
+    "nome": "Admin",
+    "email": "admin@gmail.com"
+  }
+}
+```
 
-#### Query params opcionais
+## CRUD de livros
+
+| Método | Rota | Autenticação | Descrição |
+| --- | --- | --- | --- |
+| `GET` | `/livros` | Não | Lista livros |
+| `GET` | `/livros/:id` | Bearer | Busca um livro |
+| `POST` | `/livros` | Bearer | Cadastra um livro |
+| `PUT` | `/livros/:id` | Bearer | Atualiza um livro |
+| `DELETE` | `/livros/:id` | Bearer | Exclui um livro |
+
+Filtros opcionais da listagem:
 
 - `titulo`
 - `autor`
 - `categoria`
-- `limit`
+- `limit`, número inteiro maior que zero
 
-#### Exemplos
+Exemplo: `GET /livros?categoria=Fantasia&limit=5`.
 
-```bash
-GET /livro
-GET /livro?limit=5
-GET /livro?categoria=Fantasia
-GET /livro?autor=George Orwell
-GET /livro?titulo=Harry
-```
-
-### `GET /livro/:id`
-
-Rota publica para buscar um livro especifico pelo ID informado na URL.
-
-#### Exemplo
-
-```bash
-GET /livro/1
-```
-
-### `POST /livro`
-
-Rota privada para cadastrar livro.
-
-#### Header obrigatorio
-
-```http
-Authorization: Bearer SEU_TOKEN
-```
-
-#### Body
+Corpo de cadastro e atualização:
 
 ```json
 {
-  "imagem": "https://exemplo.com/livro.jpg",
+  "imagem": "https://exemplo.com/capa.jpg",
   "titulo": "Novo Livro",
   "categoria": "Fantasia",
-  "descricao": "Descricao do livro.",
+  "descricao": "Descrição do livro.",
   "autor": "Autor Exemplo",
   "faixa_etaria": "14+"
 }
 ```
 
-### `PUT /livro/:id`
-
-Rota privada para alterar um livro existente.
-
-#### Header obrigatorio
-
-```http
-Authorization: Bearer SEU_TOKEN
-```
-
-#### Body
-
-```json
-{
-  "imagem": "https://exemplo.com/livro-atualizado.jpg",
-  "titulo": "Livro Atualizado",
-  "categoria": "Aventura",
-  "descricao": "Nova descricao do livro.",
-  "autor": "Autor Atualizado",
-  "faixa_etaria": "12+"
-}
-```
-
-### `DELETE /livro/:id`
-
-Rota privada para remover um livro pelo ID.
-
-#### Header obrigatorio
-
-```http
-Authorization: Bearer SEU_TOKEN
-```
-
-## Exemplo com curl
-
-Cadastro:
+## Exemplo completo com curl
 
 ```bash
-curl -X POST http://localhost:3000/cadastro \
+curl -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
-  -d "{\"nome\":\"Joao\",\"email\":\"joao@gmail.com\",\"senha\":\"123456\"}"
+  -d '{"email":"admin@gmail.com","senha":"senai123"}'
 ```
 
-Login:
+Depois, use o token retornado:
 
 ```bash
-curl -X POST http://localhost:3000/login \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"admin@gmail.com\",\"senha\":\"senai123\"}"
-```
-
-Listar livros:
-
-```bash
-curl http://localhost:3000/livro
-```
-
-Buscar um livro por ID:
-
-```bash
-curl http://localhost:3000/livro/1
-```
-
-Cadastrar livro com token:
-
-```bash
-curl -X POST http://localhost:3000/livro \
+curl -X POST http://localhost:3000/livros \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer SEU_TOKEN" \
-  -d "{\"imagem\":\"https://exemplo.com/capa.jpg\",\"titulo\":\"Livro Teste\",\"categoria\":\"Drama\",\"descricao\":\"Descricao\",\"autor\":\"Autor\",\"faixa_etaria\":\"12+\"}"
+  -d '{"imagem":"https://exemplo.com/capa.jpg","titulo":"Livro Teste","categoria":"Educação","descricao":"Descrição","autor":"Autor","faixa_etaria":"Livre"}'
 ```
 
-Atualizar livro com token:
+## Compatibilidade com as rotas antigas
+
+Para não quebrar os exemplos já usados pelos alunos, os aliases `/livro`, `/livro/:id`, `/cadastro` e `/login` continuam funcionando. Os novos exemplos e o Swagger usam as rotas padronizadas `/livros`, `/usuarios` e `/auth/login`.
+
+## Variáveis de ambiente
+
+| Variável | Padrão | Uso |
+| --- | --- | --- |
+| `PORT` | `3000` | Porta HTTP |
+| `JWT_SECRET` | chave local de desenvolvimento | Segredo de assinatura do JWT |
+| `APP_DB_PATH` | `database/app.db` | Caminho alternativo para o SQLite |
+
+Em produção, defina obrigatoriamente um `JWT_SECRET` forte.
+
+## Testes
 
 ```bash
-curl -X PUT http://localhost:3000/livro/1 \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer SEU_TOKEN" \
-  -d "{\"imagem\":\"https://exemplo.com/capa-atualizada.jpg\",\"titulo\":\"Livro Teste Atualizado\",\"categoria\":\"Drama\",\"descricao\":\"Nova descricao\",\"autor\":\"Autor\",\"faixa_etaria\":\"12+\"}"
+npm test
 ```
 
-Deletar livro com token:
+Os testes de integração usam um banco temporário e verificam acesso público, autenticação, CRUD de usuários, CRUD de livros e o documento OpenAPI.
 
-```bash
-curl -X DELETE http://localhost:3000/livro/1 \
-  -H "Authorization: Bearer SEU_TOKEN"
-```
-
-## Estrutura do projeto
+## Estrutura
 
 ```text
-api-test/
+api-livros/
 |-- config/
-|   `-- jwt.js
 |-- controllers/
-|   |-- authController.js
-|   `-- bookController.js
 |-- database/
-|   |-- app.db
-|   |-- connection.js
-|   |-- init.js
-|   `-- seed.js
+|-- docs/
 |-- middleware/
-|   `-- authMiddleware.js
 |-- routes/
-|   |-- authRoutes.js
-|   `-- bookRoutes.js
-|-- .gitignore
+|-- test/
+|-- utils/
 |-- package.json
 |-- README.md
 `-- server.js

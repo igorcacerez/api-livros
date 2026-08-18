@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 const { get, run } = require("../database/connection");
 const jwtConfig = require("../config/jwt");
 const { validateFieldsForProfanity } = require("../utils/contentModeration");
@@ -40,9 +41,10 @@ async function register(req, res, next) {
       });
     }
 
+    const passwordHash = await bcrypt.hash(senha, 10);
     const result = await run(
       "INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)",
-      [nome.trim(), normalizedEmail, senha]
+      [nome.trim(), normalizedEmail, passwordHash]
     );
 
     return res.status(201).json({
@@ -70,11 +72,11 @@ async function login(req, res, next) {
 
     const normalizedEmail = email.trim().toLowerCase();
     const user = await get(
-      "SELECT id, nome, email FROM usuarios WHERE email = ? AND senha = ?",
-      [normalizedEmail, senha]
+      "SELECT id, nome, email, senha FROM usuarios WHERE email = ?",
+      [normalizedEmail]
     );
 
-    if (!user) {
+    if (!user || !(await bcrypt.compare(senha, user.senha))) {
       return res.status(401).json({
         mensagem: "Credenciais invalidas."
       });
@@ -90,10 +92,16 @@ async function login(req, res, next) {
       { expiresIn: jwtConfig.expiresIn }
     );
 
+    const publicUser = {
+      id: user.id,
+      nome: user.nome,
+      email: user.email
+    };
+
     return res.status(200).json({
       mensagem: "Login realizado com sucesso.",
       token,
-      usuario: user
+      usuario: publicUser
     });
   } catch (error) {
     return next(error);

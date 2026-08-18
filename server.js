@@ -1,7 +1,10 @@
 const express = require("express");
+const swaggerUi = require("swagger-ui-express");
 const authRoutes = require("./routes/authRoutes");
 const bookRoutes = require("./routes/bookRoutes");
+const userRoutes = require("./routes/userRoutes");
 const { initializeDatabase } = require("./database/init");
+const swaggerDocument = require("./docs/swagger");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,11 +28,15 @@ app.use(express.json());
 
 app.get("/", (req, res) => {
   res.status(200).json({
-    mensagem: "API REST de livros em funcionamento."
+    mensagem: "API REST de livros em funcionamento.",
+    documentacao: "/docs"
   });
 });
 
+app.get("/docs.json", (req, res) => res.json(swaggerDocument));
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use(authRoutes);
+app.use(userRoutes);
 app.use(bookRoutes);
 
 app.use((req, res) => {
@@ -56,7 +63,7 @@ async function startServer() {
   try {
     await initializeDatabase();
 
-    app.listen(PORT, () => {
+    return app.listen(PORT, () => {
       console.log(`Servidor rodando em http://localhost:${PORT}`);
     });
   } catch (error) {
@@ -65,4 +72,11 @@ async function startServer() {
   }
 }
 
-startServer();
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = {
+  app,
+  startServer
+};
