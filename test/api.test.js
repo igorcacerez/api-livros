@@ -73,6 +73,10 @@ test("documenta a API com OpenAPI e esquema Bearer", async () => {
   const docs = await request("/docs.json");
   assert.equal(docs.response.status, 200);
   assert.equal(docs.body.openapi, "3.0.3");
+  assert.equal(
+    docs.body.servers[0].url,
+    "https://apps-api-livros.ucxocw.easypanel.host"
+  );
   assert.equal(docs.body.components.securitySchemes.bearerAuth.scheme, "bearer");
   assert.ok(docs.body.paths["/usuarios"]);
   assert.ok(docs.body.paths["/livros/{id}"]);

@@ -8,6 +8,10 @@ const swaggerDocument = {
   },
   servers: [
     {
+      url: "https://apps-api-livros.ucxocw.easypanel.host",
+      description: "Ambiente hospedado"
+    },
+    {
       url: "http://localhost:3000",
       description: "Ambiente local"
     }

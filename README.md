@@ -19,6 +19,12 @@ A API inicia em `http://localhost:3000`. A documentação interativa fica em:
 - Swagger UI: `http://localhost:3000/docs`
 - Documento OpenAPI em JSON: `http://localhost:3000/docs.json`
 
+No ambiente hospedado:
+
+- API: `https://apps-api-livros.ucxocw.easypanel.host`
+- Swagger UI: `https://apps-api-livros.ucxocw.easypanel.host/docs`
+- Documento OpenAPI: `https://apps-api-livros.ucxocw.easypanel.host/docs.json`
+
 Na primeira execução, o banco `database/app.db`, as tabelas e os dados iniciais são criados automaticamente.
 
 ## Usuário inicial
