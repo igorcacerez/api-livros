@@ -74,6 +74,46 @@ async function listBooks(req, res, next) {
   }
 }
 
+async function listCategories(req, res, next) {
+  try {
+    const rows = await all(`
+      SELECT MIN(TRIM(categoria)) AS valor
+      FROM livros
+      WHERE TRIM(categoria) <> ''
+      GROUP BY LOWER(TRIM(categoria))
+      ORDER BY valor COLLATE NOCASE ASC
+    `);
+    const categories = rows.map((row) => row.valor);
+
+    return res.status(200).json({
+      total: categories.length,
+      categorias: categories
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function listAuthors(req, res, next) {
+  try {
+    const rows = await all(`
+      SELECT MIN(TRIM(autor)) AS valor
+      FROM livros
+      WHERE TRIM(autor) <> ''
+      GROUP BY LOWER(TRIM(autor))
+      ORDER BY valor COLLATE NOCASE ASC
+    `);
+    const authors = rows.map((row) => row.valor);
+
+    return res.status(200).json({
+      total: authors.length,
+      autores: authors
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 async function getBookById(req, res, next) {
   try {
     const bookId = Number.parseInt(req.params.id, 10);
@@ -302,6 +342,8 @@ async function deleteBook(req, res, next) {
 
 module.exports = {
   listBooks,
+  listCategories,
+  listAuthors,
   getBookById,
   createBook,
   updateBook,

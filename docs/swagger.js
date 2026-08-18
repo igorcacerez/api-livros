@@ -2,9 +2,9 @@ const swaggerDocument = {
   openapi: "3.0.3",
   info: {
     title: "API de Livros",
-    version: "2.1.0",
+    version: "2.2.0",
     description:
-      "API didatica para cadastro de usuarios, autenticacao Bearer com JWT e CRUD de livros com imagem por URL ou upload. Somente a listagem de livros e o cadastro/login sao publicos."
+      "API didatica para cadastro de usuarios, autenticacao Bearer com JWT e CRUD de livros com imagem por URL ou upload. As listagens de livros, categorias e autores, alem do cadastro e login, sao publicas."
   },
   servers: [
     {
@@ -258,11 +258,65 @@ const swaggerDocument = {
         }
       }
     },
+    "/categorias": {
+      get: {
+        tags: ["Livros"],
+        summary: "Lista categorias",
+        description: "Rota publica. Retorna as categorias existentes nos livros, sem duplicacoes e em ordem alfabetica.",
+        responses: {
+          200: {
+            description: "Categorias encontradas",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    total: { type: "integer", example: 3 },
+                    categorias: {
+                      type: "array",
+                      items: { type: "string" },
+                      example: ["Aventura", "Distopia", "Fantasia"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/autores": {
+      get: {
+        tags: ["Livros"],
+        summary: "Lista autores",
+        description: "Rota publica. Retorna os autores existentes nos livros, sem duplicacoes e em ordem alfabetica.",
+        responses: {
+          200: {
+            description: "Autores encontrados",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    total: { type: "integer", example: 3 },
+                    autores: {
+                      type: "array",
+                      items: { type: "string" },
+                      example: ["Clarice Lispector", "George Orwell", "Machado de Assis"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/livros": {
       get: {
         tags: ["Livros"],
         summary: "Lista livros",
-        description: "Unica rota de livros que nao exige autenticacao.",
+        description: "Rota publica para consultar e filtrar o catalogo.",
         parameters: [
           { name: "titulo", in: "query", schema: { type: "string" } },
           { name: "autor", in: "query", schema: { type: "string" } },

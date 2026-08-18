@@ -55,10 +55,12 @@ O token expira em 10 horas. Se o usuário for removido, o token deixa de ser ace
 | `POST` | `/usuarios` | Cadastra um usuário |
 | `POST` | `/auth/login` | Realiza login |
 | `GET` | `/livros` | Lista e filtra livros |
+| `GET` | `/categorias` | Lista as categorias existentes nos livros |
+| `GET` | `/autores` | Lista os autores existentes nos livros |
 | `GET` | `/docs` | Abre o Swagger UI |
 | `GET` | `/docs.json` | Retorna o documento OpenAPI |
 
-Entre as rotas de livros, somente `GET /livros` é pública. Consultar um livro por ID, cadastrar, atualizar ou excluir exige autenticação.
+As listagens de livros, categorias e autores são públicas. Consultar um livro por ID, cadastrar, atualizar ou excluir exige autenticação.
 
 ## CRUD de usuários
 
@@ -112,6 +114,8 @@ Exemplo de resposta:
 | Método | Rota | Autenticação | Descrição |
 | --- | --- | --- | --- |
 | `GET` | `/livros` | Não | Lista livros |
+| `GET` | `/categorias` | Não | Lista categorias distintas dos livros |
+| `GET` | `/autores` | Não | Lista autores distintos dos livros |
 | `GET` | `/livros/:id` | Bearer | Busca um livro |
 | `POST` | `/livros` | Bearer | Cadastra um livro |
 | `PUT` | `/livros/:id` | Bearer | Atualiza um livro |
@@ -125,6 +129,8 @@ Filtros opcionais da listagem:
 - `limit`, número inteiro maior que zero
 
 Exemplo: `GET /livros?categoria=Fantasia&limit=5`.
+
+`GET /categorias` e `GET /autores` consultam diretamente a tabela de livros. As respostas removem valores duplicados, ordenam alfabeticamente e incluem os campos `total` e `categorias` ou `autores`.
 
 ### Opção 1: imagem por URL
 
@@ -203,7 +209,7 @@ UPLOAD_DIR=/uploads
 npm test
 ```
 
-Os testes de integração usam um banco temporário e verificam acesso público, autenticação, CRUD de usuários, CRUD de livros e o documento OpenAPI.
+Os testes de integração usam um banco temporário e verificam as listagens públicas, autenticação, CRUD de usuários, CRUD de livros e o documento OpenAPI.
 
 ## Estrutura
 

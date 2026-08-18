@@ -54,10 +54,22 @@ after(async () => {
   }
 });
 
-test("expoe somente a listagem de livros sem token", async () => {
+test("expoe as listagens do catalogo sem token", async () => {
   const list = await request("/livros");
   assert.equal(list.response.status, 200);
   assert.equal(list.body.total, 50);
+
+  const categories = await request("/categorias");
+  assert.equal(categories.response.status, 200);
+  assert.equal(categories.body.total, categories.body.categorias.length);
+  assert.equal(new Set(categories.body.categorias).size, categories.body.total);
+  assert.ok(categories.body.categorias.includes("Fantasia"));
+
+  const authors = await request("/autores");
+  assert.equal(authors.response.status, 200);
+  assert.equal(authors.body.total, authors.body.autores.length);
+  assert.equal(new Set(authors.body.autores).size, authors.body.total);
+  assert.ok(authors.body.autores.includes("Machado de Assis"));
 
   const details = await request("/livros/1");
   assert.equal(details.response.status, 401);
@@ -81,6 +93,8 @@ test("documenta a API com OpenAPI e esquema Bearer", async () => {
   assert.equal(docs.body.components.securitySchemes.bearerAuth.scheme, "bearer");
   assert.ok(docs.body.paths["/usuarios"]);
   assert.ok(docs.body.paths["/livros/{id}"]);
+  assert.ok(docs.body.paths["/categorias"]);
+  assert.ok(docs.body.paths["/autores"]);
   assert.ok(docs.body.paths["/uploads/{arquivo}"]);
   assert.ok(
     docs.body.paths["/livros"].post.requestBody.content["multipart/form-data"]
