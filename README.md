@@ -25,7 +25,9 @@ No ambiente hospedado:
 - Swagger UI: `https://apps-api-livros.ucxocw.easypanel.host/docs`
 - Documento OpenAPI: `https://apps-api-livros.ucxocw.easypanel.host/docs.json`
 
-Na primeira execução, o banco `database/app.db`, as tabelas e os dados iniciais são criados automaticamente.
+Na primeira execução, o banco `database/app.db`, as tabelas e os dados iniciais são criados automaticamente. O catálogo inicial contém 50 livros reais. Títulos, autores e capas foram conferidos com o catálogo e a API de capas da [Open Library](https://openlibrary.org/developers/api).
+
+A versão do catálogo fica registrada no banco. Assim, esta atualização substitui uma única vez a carga antiga de 20 livros, mas deploys posteriores não apagam livros cadastrados pela API.
 
 ## Usuário inicial
 
@@ -124,7 +126,9 @@ Filtros opcionais da listagem:
 
 Exemplo: `GET /livros?categoria=Fantasia&limit=5`.
 
-Corpo de cadastro e atualização:
+### Opção 1: imagem por URL
+
+Envie JSON com a URL completa no campo `imagem`:
 
 ```json
 {
@@ -136,6 +140,23 @@ Corpo de cadastro e atualização:
   "faixa_etaria": "14+"
 }
 ```
+
+### Opção 2: upload da imagem
+
+Envie `multipart/form-data` usando `imagem` para o arquivo e os demais campos como texto. São aceitos JPEG, PNG, GIF e WebP de até 5 MB.
+
+```bash
+curl -X POST http://localhost:3000/livros \
+  -H "Authorization: Bearer SEU_TOKEN" \
+  -F "imagem=@./capa.png" \
+  -F "titulo=Livro com Upload" \
+  -F "categoria=Educação" \
+  -F "descricao=Descrição do livro" \
+  -F "autor=Autor Exemplo" \
+  -F "faixa_etaria=Não informada"
+```
+
+As imagens enviadas ficam disponíveis publicamente em `/uploads/NOME_DO_ARQUIVO`. Ao substituir ou excluir um livro, a imagem local anterior também é removida.
 
 ## Exemplo completo com curl
 
@@ -165,8 +186,16 @@ Para não quebrar os exemplos já usados pelos alunos, os aliases `/livro`, `/li
 | `PORT` | `3000` | Porta HTTP |
 | `JWT_SECRET` | chave local de desenvolvimento | Segredo de assinatura do JWT |
 | `APP_DB_PATH` | `database/app.db` | Caminho alternativo para o SQLite |
+| `UPLOAD_DIR` | `uploads` dentro do projeto | Diretório persistente dos uploads |
 
 Em produção, defina obrigatoriamente um `JWT_SECRET` forte.
+
+No EasyPanel, monte volumes persistentes e use:
+
+```env
+APP_DB_PATH=/data/app.db
+UPLOAD_DIR=/uploads
+```
 
 ## Testes
 

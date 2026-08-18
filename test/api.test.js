@@ -24,6 +24,7 @@ before(async () => {
       ...process.env,
       PORT: String(port),
       APP_DB_PATH: path.join(temporaryDirectory, "test.db"),
+      UPLOAD_DIR: path.join(temporaryDirectory, "uploads"),
       JWT_SECRET: "segredo-exclusivo-dos-testes"
     },
     stdio: ["ignore", "pipe", "pipe"]
@@ -56,7 +57,7 @@ after(async () => {
 test("expoe somente a listagem de livros sem token", async () => {
   const list = await request("/livros");
   assert.equal(list.response.status, 200);
-  assert.ok(list.body.total >= 20);
+  assert.equal(list.body.total, 50);
 
   const details = await request("/livros/1");
   assert.equal(details.response.status, 401);
@@ -80,6 +81,10 @@ test("documenta a API com OpenAPI e esquema Bearer", async () => {
   assert.equal(docs.body.components.securitySchemes.bearerAuth.scheme, "bearer");
   assert.ok(docs.body.paths["/usuarios"]);
   assert.ok(docs.body.paths["/livros/{id}"]);
+  assert.ok(docs.body.paths["/uploads/{arquivo}"]);
+  assert.ok(
+    docs.body.paths["/livros"].post.requestBody.content["multipart/form-data"]
+  );
 });
 
 test("executa CRUD de usuarios e CRUD autenticado de livros", async () => {
@@ -162,6 +167,38 @@ test("executa CRUD de usuarios e CRUD autenticado de livros", async () => {
     headers: authHeaders
   });
   assert.equal(deletedBook.response.status, 200);
+
+  const uploadForm = new FormData();
+  const png = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+    "base64"
+  );
+  uploadForm.append("imagem", new Blob([png], { type: "image/png" }), "capa.png");
+  uploadForm.append("titulo", "Livro com Upload");
+  uploadForm.append("categoria", "Educacao");
+  uploadForm.append("descricao", "Livro com imagem enviada por arquivo.");
+  uploadForm.append("autor", "Autor Teste");
+  uploadForm.append("faixa_etaria", "Livre");
+
+  const uploadedBookResponse = await fetch(`${baseUrl}/livros`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${login.body.token}` },
+    body: uploadForm
+  });
+  const uploadedBook = await uploadedBookResponse.json();
+  assert.equal(uploadedBookResponse.status, 201);
+  assert.match(uploadedBook.livro.imagem, /\/uploads\/[a-f0-9-]+\.png$/);
+
+  const uploadedImage = await fetch(uploadedBook.livro.imagem);
+  assert.equal(uploadedImage.status, 200);
+  assert.equal(uploadedImage.headers.get("content-type"), "image/png");
+
+  const deletedUploadedBook = await request(`/livros/${uploadedBook.livro.id}`, {
+    method: "DELETE",
+    headers: authHeaders
+  });
+  assert.equal(deletedUploadedBook.response.status, 200);
+  assert.equal((await fetch(uploadedBook.livro.imagem)).status, 404);
 
   const deletedUser = await request(`/usuarios/${userId}`, {
     method: "DELETE",

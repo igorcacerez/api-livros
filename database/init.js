@@ -35,6 +35,13 @@ async function initializeDatabase() {
     )
   `);
 
+  await run(`
+    CREATE TABLE IF NOT EXISTS configuracoes (
+      chave TEXT PRIMARY KEY,
+      valor TEXT NOT NULL
+    )
+  `);
+
   await migratePlainTextPasswords();
   await seedInitialData();
 }

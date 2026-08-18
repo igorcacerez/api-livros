@@ -2,9 +2,9 @@ const swaggerDocument = {
   openapi: "3.0.3",
   info: {
     title: "API de Livros",
-    version: "2.0.0",
+    version: "2.1.0",
     description:
-      "API didatica para cadastro de usuarios, autenticacao Bearer com JWT e CRUD de livros. Somente a listagem de livros e o cadastro/login sao publicos."
+      "API didatica para cadastro de usuarios, autenticacao Bearer com JWT e CRUD de livros com imagem por URL ou upload. Somente a listagem de livros e o cadastro/login sao publicos."
   },
   servers: [
     {
@@ -90,7 +90,7 @@ const swaggerDocument = {
           faixa_etaria: { type: "string", example: "10+" }
         }
       },
-      LivroInput: {
+      LivroUrlInput: {
         type: "object",
         required: ["imagem", "titulo", "categoria", "descricao", "autor", "faixa_etaria"],
         properties: {
@@ -100,6 +100,22 @@ const swaggerDocument = {
           descricao: { type: "string", example: "Uma aventura inesperada." },
           autor: { type: "string", example: "J.R.R. Tolkien" },
           faixa_etaria: { type: "string", example: "10+" }
+        }
+      },
+      LivroUploadInput: {
+        type: "object",
+        required: ["imagem", "titulo", "categoria", "descricao", "autor", "faixa_etaria"],
+        properties: {
+          imagem: {
+            type: "string",
+            format: "binary",
+            description: "Arquivo JPEG, PNG, GIF ou WebP de ate 5 MB."
+          },
+          titulo: { type: "string", example: "O Hobbit" },
+          categoria: { type: "string", example: "Fantasia" },
+          descricao: { type: "string", example: "Uma aventura inesperada." },
+          autor: { type: "string", example: "J.R.R. Tolkien" },
+          faixa_etaria: { type: "string", example: "Nao informada" }
         }
       },
       LivroResponse: {
@@ -274,10 +290,18 @@ const swaggerDocument = {
       post: {
         tags: ["Livros"],
         summary: "Cadastra um livro",
+        description: "Aceita uma URL de imagem em JSON ou o upload de um arquivo de imagem em multipart/form-data.",
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
-          content: { "application/json": { schema: { $ref: "#/components/schemas/LivroInput" } } }
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/LivroUrlInput" }
+            },
+            "multipart/form-data": {
+              schema: { $ref: "#/components/schemas/LivroUploadInput" }
+            }
+          }
         },
         responses: {
           201: {
@@ -310,10 +334,18 @@ const swaggerDocument = {
       put: {
         tags: ["Livros"],
         summary: "Atualiza um livro",
+        description: "Substitui os dados e aceita uma URL ou um novo arquivo para a imagem.",
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
-          content: { "application/json": { schema: { $ref: "#/components/schemas/LivroInput" } } }
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/LivroUrlInput" }
+            },
+            "multipart/form-data": {
+              schema: { $ref: "#/components/schemas/LivroUploadInput" }
+            }
+          }
         },
         responses: {
           200: {
@@ -336,6 +368,33 @@ const swaggerDocument = {
           },
           400: { $ref: "#/components/responses/BadRequest" },
           401: { $ref: "#/components/responses/Unauthorized" },
+          404: { $ref: "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/uploads/{arquivo}": {
+      get: {
+        tags: ["Livros"],
+        summary: "Exibe uma imagem enviada",
+        description: "Rota publica usada pelas URLs retornadas depois de um upload.",
+        parameters: [
+          {
+            name: "arquivo",
+            in: "path",
+            required: true,
+            schema: { type: "string", example: "550e8400-e29b-41d4-a716-446655440000.png" }
+          }
+        ],
+        responses: {
+          200: {
+            description: "Conteudo binario da imagem",
+            content: {
+              "image/jpeg": { schema: { type: "string", format: "binary" } },
+              "image/png": { schema: { type: "string", format: "binary" } },
+              "image/gif": { schema: { type: "string", format: "binary" } },
+              "image/webp": { schema: { type: "string", format: "binary" } }
+            }
+          },
           404: { $ref: "#/components/responses/NotFound" }
         }
       }

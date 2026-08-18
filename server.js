@@ -5,9 +5,12 @@ const bookRoutes = require("./routes/bookRoutes");
 const userRoutes = require("./routes/userRoutes");
 const { initializeDatabase } = require("./database/init");
 const swaggerDocument = require("./docs/swagger");
+const { uploadDirectory } = require("./config/upload");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+app.set("trust proxy", 1);
 
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -25,6 +28,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
+app.use("/uploads", express.static(uploadDirectory));
 
 app.get("/", (req, res) => {
   res.status(200).json({
@@ -51,6 +55,20 @@ app.use((error, req, res, next) => {
   if (error instanceof SyntaxError && error.status === 400 && "body" in error) {
     return res.status(400).json({
       mensagem: "JSON invalido."
+    });
+  }
+
+  if (error.name === "MulterError") {
+    return res.status(400).json({
+      mensagem: error.code === "LIMIT_FILE_SIZE"
+        ? "A imagem deve ter no maximo 5 MB."
+        : "Nao foi possivel processar o upload da imagem."
+    });
+  }
+
+  if (error.status && error.status >= 400 && error.status < 500) {
+    return res.status(error.status).json({
+      mensagem: error.message
     });
   }
 

@@ -1,8 +1,21 @@
 const { all, get, run } = require("../database/connection");
 const { validateFieldsForProfanity } = require("../utils/contentModeration");
+const {
+  deleteUploadedImage,
+  publicImageUrl,
+  resolveImageInput,
+  saveUploadedImage
+} = require("../utils/bookImage");
 
 function hasEmptyValue(value) {
   return typeof value !== "string" || value.trim() === "";
+}
+
+function serializeBook(req, book) {
+  return {
+    ...book,
+    imagem: publicImageUrl(req, book.imagem)
+  };
 }
 
 async function listBooks(req, res, next) {
@@ -54,7 +67,7 @@ async function listBooks(req, res, next) {
 
     return res.status(200).json({
       total: books.length,
-      livros: books
+      livros: books.map((book) => serializeBook(req, book))
     });
   } catch (error) {
     return next(error);
@@ -85,7 +98,7 @@ async function getBookById(req, res, next) {
     }
 
     return res.status(200).json({
-      livro: book
+      livro: serializeBook(req, book)
     });
   } catch (error) {
     return next(error);
@@ -94,10 +107,11 @@ async function getBookById(req, res, next) {
 
 async function createBook(req, res, next) {
   try {
-    const { imagem, titulo, categoria, descricao, autor, faixa_etaria } = req.body;
+    const { titulo, categoria, descricao, autor, faixa_etaria } = req.body;
+    const imageInput = resolveImageInput(req);
 
     if (
-      hasEmptyValue(imagem) ||
+      !imageInput ||
       hasEmptyValue(titulo) ||
       hasEmptyValue(categoria) ||
       hasEmptyValue(descricao) ||
@@ -105,7 +119,7 @@ async function createBook(req, res, next) {
       hasEmptyValue(faixa_etaria)
     ) {
       return res.status(400).json({
-        mensagem: "Os campos imagem, titulo, categoria, descricao, autor e faixa_etaria sao obrigatorios."
+        mensagem: "Envie uma imagem por URL ou upload e preencha titulo, categoria, descricao, autor e faixa_etaria."
       });
     }
 
@@ -122,30 +136,42 @@ async function createBook(req, res, next) {
       });
     }
 
-    const result = await run(
-      `INSERT INTO livros (imagem, titulo, categoria, descricao, autor, faixa_etaria)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [
-        imagem.trim(),
-        titulo.trim(),
-        categoria.trim(),
-        descricao.trim(),
-        autor.trim(),
-        faixa_etaria.trim()
-      ]
-    );
+    const imageValue = imageInput.type === "upload"
+      ? await saveUploadedImage(imageInput.file)
+      : imageInput.value;
+    let result;
+
+    try {
+      result = await run(
+        `INSERT INTO livros (imagem, titulo, categoria, descricao, autor, faixa_etaria)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          imageValue,
+          titulo.trim(),
+          categoria.trim(),
+          descricao.trim(),
+          autor.trim(),
+          faixa_etaria.trim()
+        ]
+      );
+    } catch (error) {
+      await deleteUploadedImage(imageValue);
+      throw error;
+    }
+
+    const createdBook = {
+      id: result.lastID,
+      imagem: imageValue,
+      titulo: titulo.trim(),
+      categoria: categoria.trim(),
+      descricao: descricao.trim(),
+      autor: autor.trim(),
+      faixa_etaria: faixa_etaria.trim()
+    };
 
     return res.status(201).json({
       mensagem: "Livro cadastrado com sucesso.",
-      livro: {
-        id: result.lastID,
-        imagem: imagem.trim(),
-        titulo: titulo.trim(),
-        categoria: categoria.trim(),
-        descricao: descricao.trim(),
-        autor: autor.trim(),
-        faixa_etaria: faixa_etaria.trim()
-      }
+      livro: serializeBook(req, createdBook)
     });
   } catch (error) {
     return next(error);
@@ -155,7 +181,8 @@ async function createBook(req, res, next) {
 async function updateBook(req, res, next) {
   try {
     const bookId = Number.parseInt(req.params.id, 10);
-    const { imagem, titulo, categoria, descricao, autor, faixa_etaria } = req.body;
+    const { titulo, categoria, descricao, autor, faixa_etaria } = req.body;
+    const imageInput = resolveImageInput(req);
 
     if (Number.isNaN(bookId) || bookId <= 0) {
       return res.status(400).json({
@@ -164,7 +191,7 @@ async function updateBook(req, res, next) {
     }
 
     if (
-      hasEmptyValue(imagem) ||
+      !imageInput ||
       hasEmptyValue(titulo) ||
       hasEmptyValue(categoria) ||
       hasEmptyValue(descricao) ||
@@ -172,11 +199,11 @@ async function updateBook(req, res, next) {
       hasEmptyValue(faixa_etaria)
     ) {
       return res.status(400).json({
-        mensagem: "Os campos imagem, titulo, categoria, descricao, autor e faixa_etaria sao obrigatorios."
+        mensagem: "Envie uma imagem por URL ou upload e preencha titulo, categoria, descricao, autor e faixa_etaria."
       });
     }
 
-    const existingBook = await get("SELECT id FROM livros WHERE id = ?", [bookId]);
+    const existingBook = await get("SELECT id, imagem FROM livros WHERE id = ?", [bookId]);
 
     if (!existingBook) {
       return res.status(404).json({
@@ -197,32 +224,47 @@ async function updateBook(req, res, next) {
       });
     }
 
-    await run(
-      `UPDATE livros
-       SET imagem = ?, titulo = ?, categoria = ?, descricao = ?, autor = ?, faixa_etaria = ?
-       WHERE id = ?`,
-      [
-        imagem.trim(),
-        titulo.trim(),
-        categoria.trim(),
-        descricao.trim(),
-        autor.trim(),
-        faixa_etaria.trim(),
-        bookId
-      ]
-    );
+    const imageValue = imageInput.type === "upload"
+      ? await saveUploadedImage(imageInput.file)
+      : imageInput.value;
+
+    try {
+      await run(
+        `UPDATE livros
+         SET imagem = ?, titulo = ?, categoria = ?, descricao = ?, autor = ?, faixa_etaria = ?
+         WHERE id = ?`,
+        [
+          imageValue,
+          titulo.trim(),
+          categoria.trim(),
+          descricao.trim(),
+          autor.trim(),
+          faixa_etaria.trim(),
+          bookId
+        ]
+      );
+    } catch (error) {
+      await deleteUploadedImage(imageValue);
+      throw error;
+    }
+
+    if (existingBook.imagem !== imageValue) {
+      await deleteUploadedImage(existingBook.imagem).catch(console.error);
+    }
+
+    const updatedBook = {
+      id: bookId,
+      imagem: imageValue,
+      titulo: titulo.trim(),
+      categoria: categoria.trim(),
+      descricao: descricao.trim(),
+      autor: autor.trim(),
+      faixa_etaria: faixa_etaria.trim()
+    };
 
     return res.status(200).json({
       mensagem: "Livro atualizado com sucesso.",
-      livro: {
-        id: bookId,
-        imagem: imagem.trim(),
-        titulo: titulo.trim(),
-        categoria: categoria.trim(),
-        descricao: descricao.trim(),
-        autor: autor.trim(),
-        faixa_etaria: faixa_etaria.trim()
-      }
+      livro: serializeBook(req, updatedBook)
     });
   } catch (error) {
     return next(error);
@@ -239,7 +281,7 @@ async function deleteBook(req, res, next) {
       });
     }
 
-    const existingBook = await get("SELECT id FROM livros WHERE id = ?", [bookId]);
+    const existingBook = await get("SELECT id, imagem FROM livros WHERE id = ?", [bookId]);
 
     if (!existingBook) {
       return res.status(404).json({
@@ -248,6 +290,7 @@ async function deleteBook(req, res, next) {
     }
 
     await run("DELETE FROM livros WHERE id = ?", [bookId]);
+    await deleteUploadedImage(existingBook.imagem).catch(console.error);
 
     return res.status(200).json({
       mensagem: "Livro removido com sucesso."
